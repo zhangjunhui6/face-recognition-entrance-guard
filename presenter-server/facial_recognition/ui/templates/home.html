@@ -1,0 +1,1090 @@
+<!doctype html>
+<html lang="zn">
+<head>
+    <meta charset="UTF-8">
+    <title>Atlas200DK门禁系统</title>
+    <link rel="stylesheet" href="../static/css/base.css">
+    <link rel="stylesheet" href="../static/css/list.css">
+    <link rel="stylesheet" href="../static/css/face.css">
+    <link rel="stylesheet" href="../static/css/dialog.css">
+    <link rel="stylesheet" href="../static/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../static/cropper/cropper.css">
+</head>
+<!-- 接收appList、faceList和VideoState三个参数 -->
+<body onload="init_image({{listret[0]}}, {{listret[1]}}, {{listret[2]}})" style="background-color: #edf7f9">
+<div class="container-fluid">
+    <div class="nav_library">
+        <div class="nav_left">
+            <p style="margin-bottom: 0">
+                <span>智能门禁系统</span>
+            </p>
+        </div>
+    </div>
+    <!-- 顶部内容 -->
+    <div class="container_top">
+        <div class="container">
+            <ul class="nav nav-tabs" role="tablist">
+                <li role="presentation" class="active">
+                    <a href="#home" aria-controls="home" role="tab" data-toggle="tab" id="refresh">
+                        画面列表
+                    </a>
+                </li>
+                <li role="presentation">
+                    <a href="#profile" aria-controls="profile" role="tab" data-toggle="tab" id="face_library">
+                        人脸信息库
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <!-- 内容主体-->
+    <div class="tab-content">
+        <!--画面列表界面-->
+        <div role="tabpanel" class="tab-pane active" id="home">
+            <div class="container">
+                <div class="box_content">
+                    <!-- 设备列表 -->
+                    <div class="content_bot" style="margin-top: 60px">
+                        <form name="myForm">
+                            <table width="100%" border="1">
+                                <tr>
+                                    <th style="text-align: center;background-color: white;height: 40px">
+                                        序号
+                                    </th>
+                                    <th style="text-align: center;background-color: white;height: 40px">
+                                        通道名称
+                                    </th>
+                                </tr>
+                                {% for item in listret[0] %}  <!--(idx,app_id)即设备名称列表信息-->
+                                <tr>
+                                    <td>{{item['id']}}</td>
+                                    <td>
+                                        <a class="view_channel" style="cursor:pointer">
+                                            {{item['appName']}}
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% end %}
+                            </table>
+                        </form>
+                    </div>
+                    <!-- 显示画面 -->
+                    <div class="video_box">
+                        <!-- 通道名、帧率信息 -->
+                        <div class="video_fps" id="fpswapper">
+                            <p>
+                                通道名: <span id="channel_name_val"></span>
+                                &nbsp;&nbsp;&nbsp;&nbsp
+                                帧率: <span id="fps_val"></span>
+                            </p>
+                        </div>
+                        <!-- 画面内容 -->
+                        <div class="video_inner">
+                            <div class="video_loading">
+                                <img src="../static/images/loading.gif" alt="" id="loading" board="1"/>
+                                <canvas id="canvas"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--人脸信息库界面-->
+        <div role="tabpanel" class="tab-pane" id="profile">
+            <div class="container">
+                <div class="top_insert">
+                    <!-- 用户ID输入部分 -->
+                    <div class="top_insert_left">
+                        <div class="form-group">
+                            <label for="userid" style="margin-right: 25px">
+                                用户ID:
+                            </label>
+                            <input type="text" class="form-control" id="userid" placeholder="1"
+                                   style="display: inline; width: 25%">
+                        </div>
+                        <div style="width:100%;height:2px;margin:16px auto;background:#f0f0f0;"></div>
+                    </div>
+                    <!-- 相机拍照注册部分 -->
+                    <div style="width: 100%;display: flex;flex-direction: column;">
+                        <button id="chose_from_camera" class="btn btn-primary" style="width: 20%;">
+                            相机拍照注册
+                        </button>
+                        <div id="camera_rela" style="margin-top: 2px;float: left;display: flex;flex-direction: row;">
+                            <div>
+                                <canvas id="camera-canvas" style="width:640px;"></canvas>
+                            </div>
+                            <div style="display: flex;flex-direction: column;margin-left: 16px;">
+                                <p>图片展示:</p>
+                                <img id="camera_photo" alt="相机拍照图片展示" src="../static/123.png"
+                                     style="width:200px;height:300px;"/>
+                                <div style="margin-top: 4px;">
+                                    <button class="btn btn-default" id="chose_curr">拍照</button>
+                                    <button class="btn btn-default" id="start_register" style="margin-left:8px;">
+                                        注册
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="width:100%;height:2px;margin:16px auto;background:#f0f0f0;"></div>
+                    </div>
+                    <!-- 本地图片注册部分 -->
+                    <div class="top_insert_left" style="width:100%">
+                        <button id="chose_from_album" class="btn btn-primary" style="width: 20%;margin-bottom:16px;">
+                            本地图片注册
+                        </button>
+                    </div>
+                    <div class="top_insert_left" id="chose_from_album_div">
+                        <form class="" style="position: relative;top:20px">
+                            <div class="form-group" style="position: relative;top:inherit">
+                                <label class="control-label" for="input" style="margin-right: 53px;">照片</label>
+                                <input type="file" id="input" class="sr-only" accept="image/*">
+                                <input type="text" class="form-control" id="filename" placeholder="xxx.jpg"
+                                       readonly="readonly" style="display: inline; width: 25%">
+                                <label for="input" class="btn btn-default" id="Browse"
+                                       style="vertical-align:baseline;width:80px;">
+                                    <span>浏览</span>
+                                </label>
+                                <button type="button" class="btn btn-primary" id="submit"
+                                        style="vertical-align:baseline;width:80px;">
+                                    注册
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    <div id="example_">
+                        <div class="top_insert_right">
+                            <div class="top_insert_right_left">
+                                <div class="example-photo-box">
+                                    <label for="example-photo">人脸照片示例</label>
+                                    <img id="example-photo" class="img-responsive" src="../static/123.png" alt="">
+                                </div>
+                            </div>
+                            <div class="top_insert_right_right">
+                                <div class="user-photo-box hidden">
+                                    <label for="user-photo">待注册照片</label>
+                                    <img id="user-photo" class="img-responsive" src="" alt="">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal fade" id="changeModal" tabindex="-1" role="dialog" aria-hidden="true"
+                         data-backfrop="static">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-body">
+                                    <div class="img-container">
+                                        <img src="" alt="" id="photo">
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button class="btn btn-primary" onclick="sendPhoto();" style="width:70px;">
+                                        确定
+                                    </button>
+                                    <button class="btn btn-close" aria-hidden="true" data-dismiss="modal"
+                                            style="width:70px;">
+                                        取消
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- 浏览、删除人脸信息部分 -->
+                <div class="bot_pic_con">
+                    <div class="del_con" style="position:relative; top:-25px">
+                        <button type="button" class="btn btn-default" id="delete" style="width:90px;">
+                            删除
+                        </button>
+                        <button type="button" class="btn btn-default" id="delete_all" style="width:90px;">
+                            清空
+                        </button>
+                    </div>
+                    <!-- 显示人脸照片 -->
+                    <div class="row row_dif">
+                        <form action="" id="myForm">
+                            <ul class="news_box" id="fenye">
+
+                            </ul>
+                        </form>
+                    </div>
+                    <!-- 页面跳转部分 -->
+                    <div class="fenye">
+                        <div class="fenye_list">
+                            <ul id="fenye_list">
+                                <li><a class="fensiprev">上一页</a></li>
+                                <li><a class="fensinext">下一页</a></li>
+                            </ul>
+                            <a class="page" id="total_page">
+                                总页数:
+                                <span id="page"></span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="form-group" id="jump-group">
+                        <button id="btn-jump" type="button" class="btn btn-primary btn-sm"
+                                style="vertical-align: baseline; float:right; height:25px;">
+                            确定
+                        </button>
+                        <span id="totalpagenum" style="float:right; margin-right: 10px;"></span>
+                        <input class="form-control" type="text"
+                               style="display:inline; float:right; width:56px; height:25px;" id="jump">
+                        <label for="jump" style="float:right; height:25px; text-align: center; margin-right: 10px;">
+                            跳转至
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script src="../static/js/jquery-1.10.2.min.js"></script>
+<script src="../static/js/dialog.js"></script>
+<script src="../static/bootstrap/js/bootstrap.min.js"></script>
+<script src="../static/cropper/cropper.js"></script>
+
+<!-- 画面列表相关函数：点击画面列表、点击人脸信息库、点击通道名称&显示画面 -->
+<script>
+    let log = console.log.bind(console)
+    let retCodeSuccess = "0"
+    let ws, req
+    let canvas_width, canvas_height
+    let current_name
+
+    let canvas = document.getElementById("canvas")
+    let ctx = canvas.getContext("2d")
+    $('#fpswapper').hide()
+    $('#loading').hide()
+
+    // 点击画面列表
+    $("#refresh").click(function () {
+        console.log("点击画面列表")
+        $("html,body").animate({
+            scrollTop: 0
+        }, 500);
+    })
+
+    // 点击人脸信息库
+    $("#face_library").click(function () {
+        console.log("点击人脸信息库")
+        $("html,body").animate({
+            scrollTop: 0
+        }, 500);
+    })
+
+     // 点击通道名称,发送view的get请求
+    $(".view_channel").click(function () {
+        $('#loading').show()
+        $('#canvas').hide()
+        if (ws !== undefined) {
+            ws.close()
+        }
+        let req, app_name = encodeURIComponent($(this).text())
+        let url = "/view?app_name=" + app_name
+        $.ajax({
+            type: "GET",
+            url: url,
+            dataType: "json",
+            success: function (data) {
+                if (data["ret"] === retCodeSuccess) {
+                    req = data["msg"]
+                    startViewVideo(app_name, req)   // 开始显示画面
+                } else {
+                    log("查看通道画面失败，通道不存在")
+                    dialog.tip("提示", "查看通道画面失败，通道不存在")
+                }
+            },
+            error: function (e) {
+                alert(e)
+            }
+        })
+    })
+
+    // 开始显示画面，通过WebSocket通信获取每一帧数据
+    function startViewVideo(app_name, req) {
+        if (canvas_width !== undefined && canvas_height !== undefined) {
+            ctx.clearRect(0, 0, canvas_width, canvas_height)
+            console.log("画布清空")
+        }
+        // 显示loading
+        $('#loading').show()
+        $('#canvas').hide()
+        // 显示fps画面
+        $('#channel_name_val').text(decodeURIComponent(app_name))
+        $('#fps_val').text("")
+        $('#fpswapper').show()
+        if (ws !== undefined) {
+            ws.close()
+            console.log("websocket已存在，关闭websocket")
+        }
+        console.log("开始显示视频")
+
+        // ws url
+        let wsProtocol = "ws://"
+        if (window.location.protocol === "https:") {
+            wsProtocol = "wss://";
+        }
+        let wsUrl = wsProtocol + window.location.host + "/websocket?req=" + req + "&app_name=" + app_name;
+        // 创建WebSocket连接
+        ws = new WebSocket(wsUrl);
+        console.log("创建websocket连接成功")
+
+        /* 打开时执行的函数 */
+        ws.onopen = function () {
+            ws.send('next');
+        }
+
+        /* 接收到消息时执行的函数 */
+        ws.onmessage = function (evt) {
+            $('#loading').hide()
+            $('#canvas').show()
+            let data = JSON.parse(evt.data)  // JSON解析
+            if (data["ret"] === retCodeSuccess) {
+                $('#fps_val').text(data["fps"])  // 设置帧率
+                // 图片数据
+                let src = "data:image/jpeg;base64," + data["image"];
+                let img = new Image()
+                img.src = src
+                // 画界面
+                img.onload = function () {
+                    canvas_width = img.width
+                    canvas_height = img.height
+                    canvas.setAttribute("width", canvas_width)
+                    canvas.setAttribute("height", canvas_height)
+                    ctx.strokeStyle = "yellow"
+                    ctx.font = "bold 40px serif"
+                    ctx.fillStyle = "red"
+                    ctx.drawImage(img, 0, 0)
+                    for (let i in data["face_list"]) {
+                        // 显示文字提示内容
+                        let msg = ""
+                        if (data["face_list"][i].is_alive === false) {
+                            msg = "警告：非活体！"
+                            ctx.fillText(msg, 30, canvas_height - 40)
+                        } else {
+                            // 判断识别是否成功
+                            if (data["face_list"][i].confidence > 0 && data["face_list"][i].confidence <= 1) {
+                                msg = "认证成功: " + data["face_list"][i].name
+                                ctx.fillStyle = "green"
+                                ctx.fillText(msg, 30, canvas_height - 100)
+                            } else {
+                                msg = "认证失败！"
+                                ctx.fillStyle = "red"
+                                ctx.fillText(msg, 30, canvas_height - 100)
+                            }
+
+                            // 判断体温是否正常
+                            if (data["face_list"][i].temp < 37.3) {
+                                msg = "体温正常:" + data["face_list"][i].temp.toFixed(2) + "℃"
+                                ctx.fillStyle = "green"
+                                ctx.fillText(msg, 30, canvas_height - 40)
+                            } else {
+                                msg = "体温异常:" + data["face_list"][i].temp.toFixed(2) + "℃"
+                                ctx.fillStyle = "red"
+                                ctx.fillText(msg, 30, canvas_height - 40)
+                            }
+                        }
+
+                        // 绘制人脸矩形框
+                        let pos = data["face_list"][i].coordinate
+                        ctx.beginPath()
+                        ctx.moveTo(pos[0], pos[1])
+                        ctx.lineTo(pos[0], pos[3] / 3 + pos[1] * 2 / 3)
+
+                        ctx.moveTo(pos[0], pos[3] * 2 / 3 + pos[1] / 3)
+                        ctx.lineTo(pos[0], pos[3])
+                        ctx.lineTo(pos[0] * 2 / 3 + pos[2] / 3, pos[3])
+
+                        ctx.moveTo(pos[0] / 3 + pos[2] * 2 / 3, pos[3])
+                        ctx.lineTo(pos[2], pos[3])
+                        ctx.lineTo(pos[2], pos[3] * 2 / 3 + pos[1] / 3)
+
+                        ctx.moveTo(pos[2], pos[3] / 3 + pos[1] * 2 / 3)
+                        ctx.lineTo(pos[2], pos[1])
+                        ctx.lineTo(pos[2] * 2 / 3 + pos[0] / 3, pos[1])
+
+                        ctx.moveTo(pos[0] * 2 / 3 + pos[2] / 3, pos[1])
+                        ctx.lineTo(pos[0], pos[1])
+                        ctx.stroke()
+                    }
+                }
+
+            }
+            // 请求下一帧数据
+            ws.send('next')
+        }
+    }
+
+</script>
+
+<!-- 人脸信息库初始化 -->
+<script>
+    $("#fenye").hide()
+    $('#fenye_list').hide()
+    $('#total_page').hide()
+    $("#jump-group").hide()
+
+    let currentApplist  // appList
+
+    let fensi = []  // face_list
+    let now_fensi = []  //当前页的face_list
+    let page_size = 6
+    let page_num    //页数
+    let uploadImage
+    let uploadedImageURL
+    let CropperOptions = {
+        viewMode: 2, //make crop frame in the origin frame
+    }
+
+    /* 初始化人脸信息库 */
+    function init_image(appList, list, videostate) {
+        log("初始化人脸库")
+        if (list.length !== 0) {
+            $("#fenye").show()
+            $('#fenye_list').show()
+            $('#total_page').show()
+            $("#jump-group").show()
+        }
+        currentApplist = appList
+        fensi = []
+        for (let i = 0; i < list.length; i++) {
+            fensi.push({
+                id: list[i]['id'],
+                title: list[i]["name"],
+                src: list[i]["image"]
+            })
+        }
+        load_img();
+        if (videostate["ret"] === 1) {
+            // 显示画面
+            startViewVideo(videostate["msg"].name, videostate["msg"].req)
+        }
+    }
+
+    // 加载图片
+    function load_img() {
+        log("开始加载图片")
+        let card_num = fensi.length;
+        page_num = Math.ceil(card_num / page_size);
+        $("#page").html(page_num); // 总页数赋值
+        $("#totalpagenum").text("/" + page_num + "")
+        updata(page_num, 1);
+        $("#ye1").addClass("index");
+        log("加载图片成功")
+    }
+
+    // 更新数据,
+    function updata(page_num, current_page) {
+        now_fensi = [];
+        $("#fenye_list").empty(); //上一页、下一页
+        $("#fenye").empty();    // 照片卡片清空
+
+        let prev_page = current_page - 1;
+        let next_page = current_page + 1;
+        if (current_page === 1)
+            prev_page = current_page;
+        if (current_page === page_num)
+            next_page = page_num;
+        let ht = "<li><a onclick='javascript:updata(" + page_num + "," + prev_page +
+            ");' class='fensiprev'>上一页</a></li><li><a onclick='javascript:updata(" + page_num + "," + next_page +
+            ");' class='fensinext'>下一页</a></li>";
+        $("#fenye_list").append(ht); //添加上一页、下一页按钮
+
+        if (page_num < 5) {
+            for (i = 1; i < page_num + 1; i++) {
+                let html = "<li><a onclick=" + "javascript:updata(" + page_num + "," + i + ");" + " class='ye'>" + i + "</a></li>";
+                if (current_page === i) {
+                    html = "<li><a onclick=" + "javascript:updata(" + page_num + "," + i + ");" + " class='ye index'>" + i +
+                        "</a></li>";
+                }
+                $(".fensinext").parents('li').before(html);
+            }
+        } else if (page_num >= 5) {
+            for (let i = 1; i < page_num + 1; i++) {
+                let html = "<li><a onclick=" + "javascript:updata(" + page_num + "," + i + ");" + " class='ye'>" + i + "</a></li>";
+                if (current_page < 4 && i <= 5) {
+                    if (current_page === i) {
+                        html = "<li><a onclick=" + "javascript:updata(" + page_num + "," + i + ");" + " class='ye index'>" + i +
+                            "</a></li>";
+                    }
+                    $(".fensinext").parents('li').before(html);
+                }
+                if (current_page > 3 && current_page <= (page_num - 2)) {
+                    if (i <= (current_page + 2) && i >= (current_page - 2)) {
+                        if (current_page === i) {
+                            html = "<li><a onclick=" + "javascript:updata(" + page_num + "," + i + ");" + " class='ye index'>" + i +
+                                "</a></li>";
+                        }
+                        $(".fensinext").parents('li').before(html);
+                    }
+                }
+                if (current_page === (page_num - 1)) {
+                    if (i > (page_num - 5)) {
+                        if (current_page === i) {
+                            html = "<li><a onclick=" + "javascript:updata(" + page_num + "," + i + ");" + " class='ye index'>" + i +
+                                "</a></li>";
+                        }
+                        $(".fensinext").parents('li').before(html);
+                    }
+                } else if (current_page === page_num) {
+                    if (i > (page_num - 5)) {
+                        if (current_page === i) {
+                            html = "<li><a onclick=" + "javascript:updata(" + page_num + "," + i + ");" + " class='ye index'>" + i +
+                                "</a></li>";
+                        }
+                        $(".fensinext").parents('li').before(html);
+                    }
+                }
+
+            }
+        }
+
+        // 人脸照片显示
+        for (let i = 0; i < fensi.length; i++) {
+            let x = current_page - 1;
+            if (i === 0) {
+                i = i + x * page_size;
+            }
+            if (i < current_page * page_size){
+                now_fensi.push(fensi[i]);
+            }
+        }
+        for (let i = 0; i < now_fensi.length; i++) {
+            let html =
+                "<li id=" + 'card' + i + " class='small_card col-lg-4 col-md-4 col-sm-4 col-xs-4'>" +
+                    "<input class='pic_check' type='checkbox' name='mycheck' id=" + 'carda' + i + ">" +
+                    "<label for=" + 'carda' + i + ">" +
+                        "<div class='pic_con' style='background-color: #eaeaea;'>" +
+                            "<img class='img-responsive' style='margin-bottom:0;margin-right:0'src=" + now_fensi[i].src + " alt=''> " +
+                        "</div>" +
+                    "</label>" +
+                    "<p class='p_title'><span>" + now_fensi[i].title + "</span></p>"
+                + "</li>"
+            $("#fenye").append(html);
+        }
+    }
+</script>
+
+<!-- 人脸注册、人脸删除、清空、页码跳转处理模块 -->
+<script>
+    let chose_from_camera = document.getElementById("chose_from_camera");
+    let camera_canvas = document.getElementById("camera-canvas");
+    let camera_ctx = camera_canvas.getContext("2d");
+    let chose_curr = document.getElementById("chose_curr");
+    let start_register = document.getElementById("start_register");
+    let main_img_src;
+    let first_pos;
+    let up_url;
+    let app_name = $(".view_channel").text();
+    rate = 0.5
+    flag = true;
+
+    let fix_width = 220;
+    let fix_height = 300;
+
+    $("#camera_rela").hide();
+    $("#chose_from_album_div").hide();
+    $("#example_").hide();
+
+    /* 检查上传的照片格式 */
+    function checkImageValid() {
+        // 没有上传图片
+        if (!uploadImage) {
+            log("请选择一张图片，并裁剪出人脸区域")
+            dialog.tip("提示", "请选择一张图片，并裁剪出人脸区域")
+            return false
+        }
+
+        // 检查base64头部
+        let img = uploadImage.trim()
+        let jpg_head = "data:image/jpeg;base64,"
+        if (img.length < jpg_head.length) {
+            log("Tips", "图片编码错误")
+            dialog.tip("提示", "图片编码错误")
+            return false
+        }
+        for (let i = 0; i <jpg_head.length; i++) {
+            if (img.charAt(i) !== jpg_head.charAt(i)) {
+                log("图片编码错误")
+                dialog.tip("提示", "图片编码错误")
+                return false
+            }
+        }
+        return true
+    }
+
+    /* 检查用户ID的合法性 */
+    function checkUserIDValid() {
+        let user_id = $("#userid").val().trim();
+        // 判断是否为空
+        if (user_id.length <= 0) {
+            log("ID不能为空")
+            dialog.tip("提示", "ID不能为空");
+            return false;
+        }
+        // 判断是否为数字字符串
+        for (let i = 0; i < user_id.length; i++) {
+            let c = user_id.charAt(i).charCodeAt();
+            let flag = ((c === 32) || (c >= 48 && c <= 57));
+            if (false === flag) {
+                log("ID由数字0-9组成")
+                dialog.tip("提示", "ID由数字0-9组成");
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // 浏览图片
+    $('#filename').click(function () {
+        $('#Browse').click()
+    })
+
+    // 本地图片注册
+    $('#submit').click(function () {
+        if (true === checkUserIDValid() && true === checkImageValid()) {
+            let submitUrl = "/register?" + "user_id=" +
+                encodeURIComponent($("#userid").val().trim()) + "&image_data=" +
+                encodeURIComponent(uploadImage.trim()) +
+                "&time=" + (new Date().getTime());
+            $('#submit').attr("disabled", true)
+            // 发送人脸注册post请求
+            $.ajax({
+                type: "POST",
+                url: submitUrl,
+                dataType: "json",
+                success: function (data) {
+                    if (data["ret"] === retCodeSuccess) {
+                        log(data["msg"])
+                        dialog.tip("提示", "人脸注册成功!", function () {
+                            window.location.reload()
+                        })
+                    } else {
+                        log(data["msg"])
+                        dialog.tip("提示", data["msg"])
+                    }
+                },
+                error: function (e) {
+                    log(e)
+                    dialog.tip("提示", e, )
+                }
+            })
+            $('#submit').attr("disabled", false)
+        }
+    });
+
+    // 删除人脸
+    $('#delete').click(function () {
+        if ($("input[name='mycheck']").is(":checked")) {
+            // 删除get请求路径
+            let delete_url = "/delete?"
+            for (let i = 0; i < now_fensi.length; i++) {
+                if ($('#carda' + i + "").is(":checked")) {
+                    delete_url = delete_url + "user_id=" + now_fensi[i].id + "&"
+                }
+            }
+            delete_url = delete_url.substring(0, delete_url.length - 1)
+            // 删除操作
+            dialog.confirm("提示", "确定删除吗？", function () {
+                $.ajax({
+                    type: "POST",
+                    url: delete_url,
+                    dataType: "json",
+                    success: function (data) {
+                        if (data["ret"] === retCodeSuccess) {
+                            log(data["msg"])
+                            dialog.tip("提示", "删除人脸成功", function () {
+                                window.location.reload()
+                            })
+                        } else {
+                            log("删除人脸失败")
+                            dialog.tip("提示", "删除人脸失败")
+                        }
+                    }
+                });
+
+            }, function () {
+                for (let i = 0; i < now_fensi.length; i++) {
+                    if ($('#carda' + i + "").is(":checked")) {
+                        $('#carda' + i + "").click()
+                    }
+                }
+            });
+        } else {
+            log("没有选择要删除的图片")
+            dialog.tip("提示", "请选择图片", function () {
+            });
+        }
+    })
+
+    // 清空人脸信息库
+    $('#delete_all').click(function () {
+        // 设置全选
+        for (let i = 0; i < now_fensi.length; i++) {
+            if ($('#carda' + i + "").is(":checked")) {
+                continue;
+            }
+            $('#carda' + i + "").click()
+        }
+        // POST请求的url
+        let delete_url = "/delete?"
+        for (let i = 0; i < fensi.length; i++) {
+            delete_url = delete_url + "user_id=" + fensi[i].id + "&"
+        }
+        delete_url = delete_url.substring(0, delete_url.length - 1)
+        // 清空处理
+        dialog.confirm("提示", "你确定要删除所有人脸信息吗?", function () {
+            $.ajax({
+                type: "POST",
+                url: delete_url,
+                dataType: "json",
+                success: function (data) {
+                    if (data["ret"] === retCodeSuccess) {
+                        log(data["msg"])
+                        dialog.tip("提示", "删除所有人脸信息成功", function () {
+                            window.location.reload()
+                        })
+                    } else {
+                        log("删除所有人脸信息失败" + "    " + data["msg"])
+                        dialog.tip("提示", "删除所有人脸信息失败" + "    " + data["msg"])
+                    }
+                }
+            });
+        }, function () {
+            for (let i = 0; i < now_fensi.length; i++) {
+                if ($('#carda' + i + "").is(":checked")) {
+                    $('#carda' + i + "").click()
+                }
+            }
+        });
+    })
+
+    // 人脸信息页跳转
+    $('#btn-jump').click(function () {
+        let flag = checkNumValid()
+        if (true === flag) {
+            let jump_page = $("#jump").val().trim()
+            if (jump_page > 0 && jump_page <= page_num) {
+                updata(page_num, jump_page)
+            } else {
+                log("跳转失败")
+                dialog.tip("提示", "跳转失败")
+            }
+        }
+    })
+
+    // 判断跳转页码合法性
+    function checkNumValid() {
+        let num = $("#jump").val().trim();
+        for (let i = 0; i < num.length; i++) {
+            let c = num.charAt(i).charCodeAt();
+            let flag = (c >= 48 && c <= 57)
+            if (false === flag) {
+                log("页码应为数字")
+                dialog.tip("提示", "页码需要数字");
+                return false;
+            }
+        }
+        return true;
+    }
+
+     // 从本地中注册人脸
+    $('#chose_from_album').click(function () {
+        $("#chose_from_album_div").show();
+        $("#example_").show();
+        $("#camera_rela").hide();
+    });
+
+    /* 从相机中注册人脸*/
+    chose_from_camera.onclick = function () {
+        $("#camera_rela").show();
+        $("#chose_from_album_div").hide();
+        $("#example_").hide();
+        if (flag) {
+            flag = false;
+            let url = "/view?app_name=" + app_name
+            $.ajax({
+                type: "GET",
+                url: url,
+                dataType: "json",
+                success: function (data) {
+                    if (data["ret"] === retCodeSuccess) {
+                        req = data["msg"];
+                        startViewVideo_(app_name, req);
+                    } else {
+                        dialog.tip("提示", "通道不存在")
+                    }
+                },
+                error: function (e) {
+                    alert(e)
+                }
+            })
+        }
+    }
+    function startViewVideo_(app_name, req) {
+        if (ws !== undefined) {
+            ws.close()
+        }
+        let wsProtocol = "ws://";
+        if (window.location.protocol === "https:") {
+            wsProtocol = "wss://";
+        }
+        let wsUrl = wsProtocol + window.location.host + "/websocket?req=" + req + "&app_name=" + app_name;
+        ws = new WebSocket(wsUrl);
+
+        ws.onopen = function () {
+            ws.send('next');
+        }
+
+        ws.onmessage = function (evt) {
+            canvas = camera_canvas;
+            ctx = camera_ctx
+            let data = JSON.parse(evt.data)
+            if (data["ret"] === retCodeSuccess) {
+                if (data["face_list"].length > 0) {
+                    first_pos = data["face_list"][0].coordinate
+                }
+                $('#fps_val').text(data["fps"])
+                let src = "data:image/jpeg;base64," + data["image"];
+                let img = new Image()
+                img.src = src
+                main_img_src = src;
+                img.onload = function () {
+                    canvas_width = img.width * rate
+                    canvas_height = img.height * rate
+                    canvas.setAttribute("width", canvas_width)
+                    canvas.setAttribute("height", canvas_height)
+                    ctx.strokeStyle = "yellow"
+                    ctx.font = "40px serif"
+                    ctx.fillStyle = "yellow"
+                    ctx.drawImage(img, 0, 0, canvas_width, canvas_height)
+                    for (let i in data["face_list"]) {
+                        current_name = data["face_list"][i].name;
+
+                        let pos = data["face_list"][i].coordinate
+                        ctx.beginPath()
+                        // 1/3 space draw line
+                        ctx.moveTo(pos[0] * rate, pos[1] * rate)
+                        ctx.lineTo(pos[0] * rate, (pos[3] / 3 + pos[1] * 2 / 3) * rate)
+
+                        ctx.moveTo(pos[0] * rate, (pos[3] * 2 / 3 + pos[1] / 3) * rate)
+                        ctx.lineTo(pos[0] * rate, pos[3] * rate)
+                        ctx.lineTo((pos[0] * 2 / 3 + pos[2] / 3) * rate, (pos[3]) * rate)
+
+                        ctx.moveTo((pos[0] / 3 + pos[2] * 2 / 3) * rate, pos[3] * rate)
+                        ctx.lineTo(pos[2] * rate, pos[3] * rate)
+                        ctx.lineTo(pos[2] * rate, (pos[3] * 2 / 3 + pos[1] / 3) * rate)
+
+                        ctx.moveTo((pos[2]) * rate, (pos[3] / 3 + pos[1] * 2 / 3) * rate)
+                        ctx.lineTo((pos[2]) * rate, (pos[1]) * rate)
+                        ctx.lineTo(((pos[2]) * 2 / 3 + pos[0] / 3) * rate, pos[1] * rate)
+
+                        ctx.moveTo((pos[0] * 2 / 3 + pos[2] / 3) * rate, (pos[1]) * rate)
+                        ctx.lineTo(pos[0] * rate, pos[1] * rate)
+
+                        ctx.stroke();
+                        break;
+                    }
+                }
+
+            }
+            ws.send('next')
+        }
+    }
+
+    chose_curr.onclick = function () {
+        if (first_pos !== undefined) {
+            let main_img = new Image();
+            main_img.src = main_img_src;
+            let temp_canvas_ = document.createElement("canvas");
+            temp_canvas_.setAttribute("width", main_img.width * rate);
+            temp_canvas_.setAttribute("height", main_img.height * rate);
+            let temp_ctx_ = temp_canvas_.getContext("2d");
+            temp_ctx_.drawImage(main_img, 0, 0, main_img.width * rate, main_img.height * rate);
+
+            let modify_y = first_pos[1] * rate - (fix_height - (first_pos[3] - first_pos[1]) * rate) / 2;
+            let modify_x = first_pos[0] * rate - (fix_width - (first_pos[2] - first_pos[0]) * rate) / 2;
+            modify_x = (modify_x > 0 ? modify_x : 0);
+            modify_y = (modify_y > 0 ? modify_y : 0);
+            let img_data = temp_ctx_.getImageData(modify_x, modify_y, fix_width, fix_height);
+
+            let temp_canvas = document.createElement("canvas");
+            temp_canvas.setAttribute("width", fix_width);
+            temp_canvas.setAttribute("height", fix_height);
+            let temp_ctx = temp_canvas.getContext("2d");
+            temp_ctx.putImageData(img_data, 0, 0);
+            up_url = temp_canvas.toDataURL("image/jpeg");
+            $("#camera_photo").attr("src", up_url);
+        } else {
+            dialog.tip("提示", "没有人脸")
+        }
+    }
+
+    start_register.onclick = function () {
+        if (up_url !== undefined)
+            register(up_url);
+        else
+            dialog.tip("提示", "请先拍下要注册的照片")
+    }
+     function register(url_) {
+        if ("未知" !== current_name && "非活体" !== current_name) {
+            dialog.tip("提示", "选择的人脸已经注册过，识别为 " + current_name)
+            return;
+        }
+        let submitUrl = "/register?" + "user_id=" + encodeURIComponent($("#userid").val().trim()) + "&image_data=" +
+            encodeURIComponent(url_.trim()) + "&time=" + (new Date().getTime());
+        $.ajax({
+            type: "POST",
+            url: submitUrl,
+            dataType: "json",
+            success: function (data) {
+                if (data["ret"] === retCodeSuccess) {
+                    log(data["msg"])
+                    dialog.tip("提示", "人脸注册成功!", function () {
+                        window.location.reload()
+                    })
+                } else {
+                    log(data["msg"])
+                    dialog.tip("提示", data["msg"])
+                }
+            },
+            error: function (e) {
+                log(e)
+                dialog.tip("提示", e)
+            }
+        })
+    }
+
+    $(document).ready(function () {
+        if (location.hash) {
+            $('a[href=' + location.hash + ']').tab('show');
+        }
+        $(document.body).on("click", "a[data-toggle]", function (event) {
+            location.hash = this.getAttribute("href");
+        });
+    });
+    $(window).on('popstate', function () {
+        let anchor = location.hash || $("a[data-toggle=tab]").first().attr("href");
+        $('a[href=' + anchor + ']').tab('show');
+    });
+</script>
+
+<!-- 抠图处理模块 -->
+<script>
+    $(function () {
+        log("开始初始化抠图模板")
+        initCropper()
+        log("完成抠图模板初始化")
+    })
+
+    // 初始化抠图，当有浏览图片时，将图片导入抠图模块
+    function initCropper() {
+        $("#photo").cropper(CropperOptions)
+        if (URL) {
+            $("#input").change(function () {
+                ImageImport();
+            })
+        } else {
+            $("#input").prop('disabled', true).addClass('disabled');
+        }
+        $("#changeModal").on('shown.bs.modal', function () {
+            $("#photo").cropper(CropperOptions)
+        })
+    }
+
+
+    // 检查大小，后进入头部检查
+    function ImageImport() {
+        let files = document.getElementById("input").files
+        if (files && files.length) {
+            file = files[0]
+            //图片大小限制: [ 10k , 5M ]
+            if (file.size < 10 * 1024 || file.size > 5 * 1024 * 1024) {
+                log("图片大小须为10K-5M")
+                dialog.tip("提示", "图片大小须为10K-5M")
+                $("#input").val('');
+                return;
+            }
+            if (/^image\/(jpeg|png|bmp)$/.test(file.type)) {
+                ImageHeaderCheck(file)
+            } else {
+                log("图片格式错误，只支持jpg/png/bmp格式的图片")
+                dialog.tip("提示", "图片格式错误，只支持jpg/png/bmp格式的图片", function () {
+                })
+            }
+
+        }
+    }
+
+    // 图片头部检查，正确则加载抠图
+    function ImageHeaderCheck(file) {
+        log("检查图片头部")
+        let reader = new FileReader();
+        reader.readAsArrayBuffer(file)
+        let jpg_head = [255, 216]
+        let png_head = [137, 80, 78, 71]
+        let bmp_head = [66, 77]
+        reader.onload = function (evt) {
+            let ImgArrayBuffer = evt.target.result
+            let buffer = new Uint8Array(ImgArrayBuffer)
+            if (BinaryCheck(buffer, jpg_head) === false && BinaryCheck(buffer, png_head) === false
+                && BinaryCheck(buffer, bmp_head) === false) {
+                $("#input").val("")
+                log("图片类型错误")
+                dialog.tip("提示", "图片必须为jpg、png、bmp格式")
+                return;
+            }
+            LoadCropper(file)
+        }
+    }
+
+    // 二进制头部检查
+    function BinaryCheck(buffer, head) {
+        if (buffer === undefined || head === undefined) {
+            return false;
+        }
+        if (head.length < 2 || buffer.length < head.length) {
+            return false
+        }
+        for (let i = 0; i < head.length; i++) {
+            if (buffer[i] !== head[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // 加载抠图
+    function LoadCropper(file) {
+        if (uploadedImageURL) {
+            URL.revokeObjectURL(uploadedImageURL);
+        }
+        uploadedImageURL = URL.createObjectURL(file);
+        // 1.销毁裁剪器 2.改变url
+        $("#photo").cropper('destroy').attr('src', uploadedImageURL)
+        // 点击空格不退出模态
+        $("#changeModal").modal({
+            backdrop: 'static'
+        })
+        $("#input").val('');
+    }
+
+    let sendPhoto = function () {
+        $('#photo').cropper('getCroppedCanvas', {
+            width: 300,
+            height: 400
+        }).toBlob(function (blob) {
+            $('#user-photo').attr('src', URL.createObjectURL(blob));
+        });
+        $('.user-photo-box').removeClass('hidden')
+        uploadImage = $('#photo').cropper('getCroppedCanvas', {
+            width: 300,
+            height: 400
+        }).toDataURL("image/jpeg")
+        $('#changeModal').modal('hide');
+        document.getElementById('filename').setAttribute('value', file.name)
+        log("成功获取抠图后的图片")
+    }
+</script>
+
+</html>
